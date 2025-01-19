@@ -218,7 +218,7 @@ You have access to a variety of tools that can help you perform specific tasks. 
   },
   AUDIO: {
     INPUT_SAMPLE_RATE: 16000,
-    OUTPUT_SAMPLE_RATE: 24000, // Higher sample rate for clearer audio
+    OUTPUT_SAMPLE_RATE: 23000, // Higher sample rate for clearer audio
     BUFFER_SIZE: 7680,
     CHANNELS: 1
   }
