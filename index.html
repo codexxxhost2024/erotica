@@ -520,8 +520,27 @@
                 bottomSheet.classList.remove('active');
             }
         });
+
+        // Connect Button Logic
+        const connectButton = document.getElementById('connect-button');
+        let isConnected = false;
+
+        connectButton.addEventListener('click', () => {
+            isConnected = !isConnected;
+            connectButton.textContent = isConnected ? 'Disconnect' : 'Connect';
+            connectButton.classList.toggle('connected', isConnected);
+            logMessage(isConnected ? 'Connected to server' : 'Disconnected from server', 'system');
+        });
+
+        // Log Message Function
+        function logMessage(message, type = 'system') {
+            const logEntry = document.createElement('div');
+            logEntry.classList.add('log-entry', type);
+            logEntry.textContent = message;
+            document.getElementById('logs-container').appendChild(logEntry);
+        }
     </script>
 
     <script src="js/main.js" type="module"></script>
 </body>
-</html>
+                </html>
