@@ -2,6 +2,23 @@ import { Logger } from '../utils/logger.js';
 import { ApplicationError, ErrorCodes } from '../utils/error-boundary.js';
 import { GoogleSearchTool } from './google-search.js';
 import { WeatherTool } from './weather-tool.js';
+import { DocumentGeneratorTool } from './document-generator.js';
+import { EmailSenderTool } from './email-sender.js';
+import { MemoryStorageTool } from './memory-storage.js';
+import { ImageGeneratorTool } from './image-generator.js';
+import { UnitConverterTool } from './unit-converter.js';
+import { RandomNumberGeneratorTool } from './random-number-generator.js';
+import { TextSummarizerTool } from './text-summarizer.js';
+import { TimeZoneConverterTool } from './time-zone-converter.js';
+import { CurrencyConverterTool } from './currency-converter.js';
+import { FactGeneratorTool } from './fact-generator.js';
+import { MarkdownGeneratorTool } from './markdown-generator.js';
+import { PersonaGeneratorTool } from './persona-generator.js';
+import { CSVGeneratorTool } from './csv-generator.js';
+import { SQLGeneratorTool } from './sql-generator.js';
+import { SourceCodeGeneratorTool } from './source-code-generator.js';
+import { WebScraperTool } from './web-scraper.js';
+import { YouTubeSummarizerTool } from './youtube-summarizer.js';
 
 /**
  * Manages the registration and execution of tools.
@@ -17,11 +34,33 @@ export class ToolManager {
     }
 
     /**
-     * Registers the default tools: GoogleSearchTool and WeatherTool.
+     * Registers the default tools.
      */
     registerDefaultTools() {
+        // Original tools
         this.registerTool('googleSearch', new GoogleSearchTool());
         this.registerTool('weather', new WeatherTool());
+
+        // New tools for document generation, email sending, etc.
+        this.registerTool('documentGenerator', new DocumentGeneratorTool());
+        this.registerTool('emailSender', new EmailSenderTool());
+        this.registerTool('memoryStorage', new MemoryStorageTool());
+        this.registerTool('imageGenerator', new ImageGeneratorTool());
+        this.registerTool('unitConverter', new UnitConverterTool());
+        this.registerTool('randomNumberGenerator', new RandomNumberGeneratorTool());
+        this.registerTool('textSummarizer', new TextSummarizerTool());
+        this.registerTool('timeZoneConverter', new TimeZoneConverterTool());
+        this.registerTool('currencyConverter', new CurrencyConverterTool());
+        this.registerTool('factGenerator', new FactGeneratorTool());
+
+        // Tools for AI news, coding, and data generation
+        this.registerTool('markdownGenerator', new MarkdownGeneratorTool());
+        this.registerTool('personaGenerator', new PersonaGeneratorTool());
+        this.registerTool('csvGenerator', new CSVGeneratorTool());
+        this.registerTool('sqlGenerator', new SQLGeneratorTool());
+        this.registerTool('sourceCodeGenerator', new SourceCodeGeneratorTool());
+        this.registerTool('webScraper', new WebScraperTool());
+        this.registerTool('youtubeSummarizer', new YouTubeSummarizerTool());
     }
 
     /**
@@ -113,4 +152,4 @@ export class ToolManager {
             };
         }
     }
-} 
+}
