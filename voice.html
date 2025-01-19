@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice - Gemini 2.0 Flash Multimodal Live API Client</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Additional styles for the voice page */
+        .voice-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .mic-button {
+            padding: var(--spacing-lg);
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mic-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        .mic-button.active {
+            background-color: var(--danger-color);
+        }
+
+        .audio-visualizers {
+            width: 100%;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Main Controls -->
+        <div class="main-controls">
+            <button id="connect-button">Connect</button>
+            <button id="theme-toggle" class="material-symbols-outlined">light_mode</button>
+            <button id="config-toggle" class="material-symbols-outlined">settings</button>
+        </div>
+
+        <!-- Voice Interface -->
+        <div class="voice-container">
+            <!-- Microphone Button -->
+            <button id="mic-button" class="mic-button">
+                <span class="material-symbols-outlined">mic</span>
+            </button>
+
+            <!-- Audio Visualizers -->
+            <div class="audio-visualizers">
+                <div class="visualizer-container">
+                    <label>Input Audio</label>
+                    <div id="input-audio-visualizer"></div>
+                </div>
+                <div class="visualizer-container">
+                    <label>Output Audio</label>
+                    <div id="audio-visualizer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navbar -->
+        <div class="bottom-navbar">
+            <a href="index.html">
+                <span class="material-symbols-outlined">home</span>
+                <span>Home</span>
+            </a>
+            <a href="chats.html">
+                <span class="material-symbols-outlined">message</span>
+                <span>Chats</span>
+            </a>
+            <a href="voice.html">
+                <span class="material-symbols-outlined">volume_up</span>
+                <span>Voice</span>
+            </a>
+            <a href="history.html">
+                <span class="material-symbols-outlined">history</span>
+                <span>History</span>
+            </a>
+            <a href="profile.html">
+                <span class="material-symbols-outlined">person</span>
+                <span>Profile</span>
+            </a>
+        </div>
+    </div>
+
+    <script src="js/main.js" type="module"></script>
+    <script>
+        // Voice-specific JavaScript
+        const micButton = document.getElementById('mic-button');
+        const inputVisualizer = document.getElementById('input-audio-visualizer');
+        const outputVisualizer = document.getElementById('audio-visualizer');
+
+        let isRecording = false;
+        let mediaRecorder;
+        let audioChunks = [];
+        let socket;
+
+        // WebSocket URL (replace with your server URL)
+        const WEBSOCKET_URL = 'wss://your-websocket-server-url';
+
+        // Initialize WebSocket connection
+        function connectToWebSocket() {
+            socket = new WebSocket(WEBSOCKET_URL);
+
+            socket.onopen = () => {
+                console.log('Connected to the voice server');
+            };
+
+            socket.onmessage = (event) => {
+                const audioBlob = new Blob([event.data], { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                audio.play();
+
+                // Visualize output audio
+                visualizeAudio(outputVisualizer, audio);
+            };
+
+            socket.onclose = () => {
+                console.log('Disconnected from the voice server');
+            };
+
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Start/stop recording
+        micButton.addEventListener('click', async () => {
+            if (!isRecording) {
+                // Start recording
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    socket.send(audioBlob);
+                    audioChunks = [];
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                micButton.classList.add('active');
+
+                // Visualize input audio
+                visualizeAudio(inputVisualizer, stream);
+            } else {
+                // Stop recording
+                mediaRecorder.stop();
+                isRecording = false;
+                micButton.classList.remove('active');
+            }
+        });
+
+        // Visualize audio
+        function visualizeAudio(visualizer, audioSource) {
+            const audioContext = new AudioContext();
+            const analyzer = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(audioSource);
+            source.connect(analyzer);
+            analyzer.fftSize = 256;
+            const bufferLength = analyzer.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const canvas = document.createElement('canvas');
+            visualizer.innerHTML = '';
+            visualizer.appendChild(canvas);
+            const canvasCtx = canvas.getContext('2d');
+
+            function draw() {
+                requestAnimationFrame(draw);
+                analyzer.getByteFrequencyData(dataArray);
+                canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = dataArray[i] / 2;
+                    canvasCtx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
+                }
+            }
+
+            draw();
+        }
+
+        // Initialize WebSocket connection when the page loads
+        connectToWebSocket();
+    </script>
+</body>
+</html>
