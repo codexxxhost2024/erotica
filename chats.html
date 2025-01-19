@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messenger-Style Real-Time Chat</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            width: 400px;
+            height: 600px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Chat Header */
+        .chat-header {
+            background-color: #0078ff;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* Chat Logs */
+        .chat-logs {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+        }
+
+        /* Message Bubbles */
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.ai {
+            align-items: flex-start;
+        }
+
+        .message.system {
+            align-items: center;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .message.user .message-bubble {
+            background-color: #0078ff;
+            color: #fff;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.ai .message-bubble {
+            background-color: #e4e6eb;
+            color: #000;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.system .message-bubble {
+            background-color: #f0f2f5;
+            color: #666;
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+
+        .timestamp {
+            font-size: 10px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        /* Input Area */
+        .input-area {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        .input-area button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            background-color: #0078ff;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .input-area button:hover {
+            background-color: #005bb5;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            Real-Time Chat
+        </div>
+
+        <!-- Chat Logs -->
+        <div class="chat-logs" id="chat-logs">
+            <!-- Messages will be dynamically added here -->
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const chatLogs = document.getElementById('chat-logs');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        // WebSocket URL (replace with your server URL)
+        const WEBSOCKET_URL = 'wss://your-websocket-server-url';
+
+        // WebSocket client
+        let socket = null;
+
+        // Initialize WebSocket connection
+        function connectToWebSocket() {
+            socket = new WebSocket(WEBSOCKET_URL);
+
+            socket.onopen = () => {
+                addMessage('Connected to the chat server', 'system');
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'message') {
+                    addMessage(data.content, data.role);
+                }
+            };
+
+            socket.onclose = () => {
+                addMessage('Disconnected from the chat server', 'system');
+            };
+
+            socket.onerror = (error) => {
+                addMessage(`WebSocket error: ${error.message}`, 'system');
+            };
+        }
+
+        // Add a message to the chat logs
+        function addMessage(message, role = 'system') {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', role);
+
+            const bubble = document.createElement('div');
+            bubble.classList.add('message-bubble');
+            bubble.textContent = message;
+
+            const timestamp = document.createElement('div');
+            timestamp.classList.add('timestamp');
+            timestamp.textContent = new Date().toLocaleTimeString();
+
+            messageElement.appendChild(bubble);
+            messageElement.appendChild(timestamp);
+            chatLogs.appendChild(messageElement);
+
+            // Scroll to the bottom
+            chatLogs.scrollTop = chatLogs.scrollHeight;
+        }
+
+        // Send a message via WebSocket
+        function sendMessage(message) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'message',
+                    content: message,
+                    role: 'user'
+                }));
+            } else {
+                addMessage('Not connected to the server', 'system');
+            }
+        }
+
+        // Handle send button click
+        sendButton.addEventListener('click', () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                addMessage(message, 'user');
+                sendMessage(message);
+                messageInput.value = '';
+            }
+        });
+
+        // Handle Enter key in the input field
+        messageInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+
+        // Initialize WebSocket connection when the page loads
+        connectToWebSocket();
+    </script>
+</body>
+</html>
